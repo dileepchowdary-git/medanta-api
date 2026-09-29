@@ -17,7 +17,7 @@ _engine = None
 def _eng():
     global _engine
     if _engine is None:
-        url = (f"postgresql://{config.PG_USER}:{quote(config.PG_PASSWORD)}"
+        url = (f"postgresql+psycopg2://{config.PG_USER}:{quote(config.PG_PASSWORD)}"
                f"@{config.PG_HOST}:{config.PG_PORT}/{config.PG_DB_STUDY}")
         _engine = create_engine(url, pool_pre_ping=True, pool_size=2, max_overflow=2)
     return _engine
