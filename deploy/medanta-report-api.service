@@ -1,0 +1,13 @@
+[Unit]
+Description=Medanta Patna report API (5C reports for the Medanta eHIS robot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/root/medanta_report_api
+ExecStart=/root/medanta_report_api/venv/bin/python /root/medanta_report_api/main.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
