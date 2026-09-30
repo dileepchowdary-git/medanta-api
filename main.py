@@ -5,7 +5,7 @@ The robot (on a Medanta PC) only ever holds MEDANTA_API_KEY. This service holds
 the read-replica login and the 5C key, and only ever returns client 4161's data.
 
   GET  /api/medanta/health
-  GET  /api/medanta/reports?days=2              completed CT/MRI reports to paste
+  GET  /api/medanta/reports?days=2              completed reports to paste
   GET  /api/medanta/reports/{report_id}/pdf?study_id=...
   POST /api/medanta/reports/{report_id}/status  {"study_id", "status", "message"}
 
@@ -13,6 +13,7 @@ Run: python main.py   (listens on 127.0.0.1:8003; nginx maps /api/medanta to it)
 """
 
 import hmac
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import logging.handlers
 import sys
@@ -78,12 +79,20 @@ def reports(request: Request, days: int = config.DEFAULT_DAYS, include_done: boo
     days = max(1, min(int(days), config.MAX_DAYS))
     done = {} if include_done else db.statuses()
     out, errors = [], 0
-    for s in db.completed_studies(days):
+    studies = db.completed_studies(days)
+
+    def one(s):
         try:
-            reps = fivec.completed_reports(s["study_fk"], str(s["updated_at"]))
+            return s, fivec.completed_reports(s["study_fk"], str(s["updated_at"])), None
         except Exception as e:
+            return s, None, e
+    # one 5C call per study; in parallel, or a cold cache over all modalities takes minutes
+    with ThreadPoolExecutor(max_workers=config.FIVEC_WORKERS) as pool:
+        results = list(pool.map(one, studies))
+    for s, reps, err in results:
+        if err is not None:
             errors += 1
-            log.warning("reports for study %s failed: %s", s["study_fk"], e)
+            log.warning("reports for study %s failed: %s", s["study_fk"], err)
             continue
         scan = db.scan_time(s["study_date"], s["study_time"])
         for n, r in enumerate(reps, 1):
@@ -103,7 +112,8 @@ def reports(request: Request, days: int = config.DEFAULT_DAYS, include_done: boo
                 "accession": s["accession"],
                 "last_status": done.get(r["id"]),
             })
-    log.info("reports days=%s -> %s report(s) for %s (%s study error(s))", days, len(out), ip, errors)
+    log.info("reports days=%s -> %s report(s) from %s studies for %s (%s study error(s))",
+             days, len(out), len(studies), ip, errors)
     return out
 
 

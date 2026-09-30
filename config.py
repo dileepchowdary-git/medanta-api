@@ -45,6 +45,7 @@ DATA_DIR = BASE_DIR / "data"                        # status.sqlite3
 LOG_DIR = BASE_DIR / "logs"
 STATUS_DB = DATA_DIR / "status.sqlite3"
 HTTP_TIMEOUT = int(os.getenv("MEDANTA_HTTP_TIMEOUT", "60"))
+FIVEC_WORKERS = int(os.getenv("MEDANTA_FIVEC_WORKERS", "10"))   # parallel 5C calls for /reports
 
 
 def check():
