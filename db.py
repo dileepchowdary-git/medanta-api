@@ -52,7 +52,7 @@ from public."Studies" s
 left join public."StudyDetails" sd on sd.study_fk = s.id
 where s.client_fk = :client
   and s.status = 'COMPLETED'
-  and s.modality && cast(:mods as varchar[])
+  and (:all_mods or s.modality && cast(:mods as varchar[]))
   and s.created_at > now() - make_interval(days => :days)
   {extra}
 order by s.id, sd.id desc
@@ -60,15 +60,15 @@ order by s.id, sd.id desc
 
 
 def completed_studies(days):
-    """Medanta's completed CT/MRI studies created in the last `days` days."""
+    """Medanta's completed studies (modalities per MEDANTA_MODALITIES) created in the last `days` days."""
     return _query(_STUDIES_SQL.format(extra=""), client=config.CLIENT_ID,
-                  mods=config.MODALITIES, days=int(days))
+                  mods=config.MODALITIES, all_mods=config.ALL_MODALITIES, days=int(days))
 
 
 def medanta_study(study_fk):
     """The study if (and only if) it is a completed Medanta study, else None."""
     rows = _query(_STUDIES_SQL.format(extra="and s.id = :fk"), client=config.CLIENT_ID,
-                  mods=config.MODALITIES, days=config.MAX_DAYS + 30, fk=int(study_fk))
+                  mods=config.MODALITIES, all_mods=config.ALL_MODALITIES, days=config.MAX_DAYS + 30, fk=int(study_fk))
     return rows[0] if rows else None
 
 

@@ -28,7 +28,9 @@ FIVEC_BASE = os.getenv("FIVEC_BASE", "https://api.5cnetwork.com")
 FIVEC_AUTH = os.getenv("FIVEC_AUTH", "")
 
 # What is served
-MODALITIES = [m.strip() for m in os.getenv("MEDANTA_MODALITIES", "CT,MRI").split(",") if m.strip()]
+# "ALL" (default) = every modality; or a list like CT,MRI
+MODALITIES = [m.strip().upper() for m in os.getenv("MEDANTA_MODALITIES", "ALL").split(",") if m.strip()]
+ALL_MODALITIES = not MODALITIES or "ALL" in MODALITIES
 DEFAULT_DAYS = int(os.getenv("MEDANTA_DEFAULT_DAYS", "2"))
 MAX_DAYS = int(os.getenv("MEDANTA_MAX_DAYS", "7"))
 REPORT_CACHE_SECS = int(os.getenv("MEDANTA_REPORT_CACHE_SECS", "600"))

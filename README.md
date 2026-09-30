@@ -20,7 +20,7 @@ Every call except `/health` needs the header `Authorization: <MEDANTA_API_KEY>`.
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/api/medanta/health` | `{"ok": true}` |
-| GET | `/api/medanta/reports?days=2` | Completed CT/MRI reports of the last `days` (1–7), one entry per report, minus those already reported SUCCESS (`include_done=true` shows all) |
+| GET | `/api/medanta/reports?days=2` | Completed reports (all modalities unless MEDANTA_MODALITIES limits them) of the last `days` (1–7), one entry per report, minus those already reported SUCCESS (`include_done=true` shows all) |
 | GET | `/api/medanta/reports/{report_id}/pdf?study_id=…` | The report PDF (plain, no letterhead); 404 if not Medanta's, 409 if the PDF isn't generated yet |
 | POST | `/api/medanta/reports/{report_id}/status` | Body `{"study_id", "status": "SUCCESS\|FAILURE\|SKIPPED", "message", "order_id", "patient_id"}`; non-SUCCESS posts a Google Chat alert |
 
