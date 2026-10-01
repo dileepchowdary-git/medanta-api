@@ -109,6 +109,7 @@ Nothing else on the VM (Yashoda :8002, GenX :8001, study correlation :8000) is t
 
 | Message | When |
 |---|---|
+| pasted | at once, for every report pasted: patient, report -> eHIS exam + Reg no, seconds (`MEDANTA_GCHAT_SUCCESS=0` turns it off) |
 | FAILED | at once, for every paste failure / NEEDS CHECK (patient, report, reason) |
 | robot not checked in | no call from the robot for `MEDANTA_ROBOT_DOWN_MIN` (30) min; "back" when it returns |
 | daily summary | at `MEDANTA_SUMMARY_AT` (21:00): pasted, failed, and every report NOT pasted with the reason |

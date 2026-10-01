@@ -37,6 +37,8 @@ REPORT_CACHE_SECS = int(os.getenv("MEDANTA_REPORT_CACHE_SECS", "600"))
 
 # Failure alerts (optional)
 GCHAT_WEBHOOK = os.getenv("MEDANTA_GCHAT_WEBHOOK", "")
+# A GChat message for every pasted report (0 = only failures, robot-down and the daily summary)
+GCHAT_SUCCESS = os.getenv("MEDANTA_GCHAT_SUCCESS", "1") not in ("0", "false", "False", "")
 # Robot-down alert: no /reports call from the robot for this long -> one GChat alert (0 = off)
 ROBOT_DOWN_MIN = int(os.getenv("MEDANTA_ROBOT_DOWN_MIN", "30"))
 # Daily GChat summary at this local hour (HH:MM, empty = off): pasted / failed / not pasted + why

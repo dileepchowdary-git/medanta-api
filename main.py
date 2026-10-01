@@ -167,6 +167,10 @@ def report_status(report_id: int, body: StatusIn, request: Request,
     db.add_event(report_id, body.order_id, body.patient_id, body.patient_name, body.report_name,
                  status, body.message)
     log.info("status report=%s study=%s %s %s", report_id, body.study_id, status, body.message[:200])
+    if status == "SUCCESS" and config.GCHAT_SUCCESS:
+        fivec.gchat(f"\u2705 Medanta Patna pasted: {body.patient_id} {body.patient_name} - "
+                    f"{body.report_name or 'report ' + str(report_id)}"
+                    + (f"\n\u2192 eHIS: {body.message}" if body.message else ""))
     if status == "FAILURE":                   # SKIPPED (no pending row) only goes into the daily summary
         fivec.gchat(f"\u274c Medanta Patna paste FAILED: patient {body.patient_id or '?'} "
                     f"{body.patient_name} - {body.report_name or 'report ' + str(report_id)} "
