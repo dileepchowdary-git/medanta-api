@@ -96,6 +96,34 @@ def _sq():
     return c
 
 
+def _ev():
+    """Every result the robot reports, append-only (for the daily summary)."""
+    c = _sq()
+    c.execute("""create table if not exists report_events (
+                   at text, report_id integer, order_id text, patient_id text, patient_name text,
+                   report_name text, status text, message text)""")
+    return c
+
+
+def add_event(report_id, order_id, patient_id, patient_name, report_name, status, message):
+    with _ev() as c:
+        c.execute("insert into report_events values (?,?,?,?,?,?,?,?)",
+                  (dt.datetime.now().isoformat(timespec="seconds"), int(report_id), order_id, patient_id,
+                   patient_name, report_name, status, (message or "")[:500]))
+
+
+def events_since(since_iso):
+    """Latest event per report since `since_iso`: report_id -> row dict."""
+    with _ev() as c:
+        rows = c.execute("""select at, report_id, order_id, patient_id, patient_name, report_name, status, message
+                            from report_events where at >= ? order by at""", (since_iso,)).fetchall()
+    keys = ("at", "report_id", "order_id", "patient_id", "patient_name", "report_name", "status", "message")
+    out = {}
+    for r in rows:
+        out[r[1]] = dict(zip(keys, r))          # later rows win
+    return out
+
+
 def set_status(report_id, study_fk, order_id, status, message, caller_ip):
     with _sq() as c:
         c.execute("""insert into report_status values (?,?,?,?,?,?,?)

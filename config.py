@@ -37,6 +37,10 @@ REPORT_CACHE_SECS = int(os.getenv("MEDANTA_REPORT_CACHE_SECS", "600"))
 
 # Failure alerts (optional)
 GCHAT_WEBHOOK = os.getenv("MEDANTA_GCHAT_WEBHOOK", "")
+# Robot-down alert: no /reports call from the robot for this long -> one GChat alert (0 = off)
+ROBOT_DOWN_MIN = int(os.getenv("MEDANTA_ROBOT_DOWN_MIN", "30"))
+# Daily GChat summary at this local hour (HH:MM, empty = off): pasted / failed / not pasted + why
+SUMMARY_AT = os.getenv("MEDANTA_SUMMARY_AT", "21:00").strip()
 
 # Runtime
 HOST = os.getenv("MEDANTA_API_HOST", "127.0.0.1")   # local only; nginx is the public door

@@ -104,3 +104,13 @@ Nothing else on the VM (Yashoda :8002, GenX :8001, study correlation :8000) is t
   taken from nginx's `X-Real-IP`, trusted only when the request comes from nginx itself.
 - The service listens on 127.0.0.1 only; it is reachable from outside only through nginx/HTTPS.
 - Logs record caller IP, endpoint and counts - never keys or PDF content.
+
+## GChat (MEDANTA_GCHAT_WEBHOOK in .env)
+
+| Message | When |
+|---|---|
+| FAILED | at once, for every paste failure / NEEDS CHECK (patient, report, reason) |
+| robot not checked in | no call from the robot for `MEDANTA_ROBOT_DOWN_MIN` (30) min; "back" when it returns |
+| daily summary | at `MEDANTA_SUMMARY_AT` (21:00): pasted, failed, and every report NOT pasted with the reason |
+
+SKIPPED results (no matching pending exam) never alert on their own - they are listed in the daily summary.

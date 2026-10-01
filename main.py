@@ -7,7 +7,9 @@ the read-replica login and the 5C key, and only ever returns client 4161's data.
   GET  /api/medanta/health
   GET  /api/medanta/reports?days=2              completed reports to paste
   GET  /api/medanta/reports/{report_id}/pdf?study_id=...
-  POST /api/medanta/reports/{report_id}/status  {"study_id", "status", "message"}
+  POST /api/medanta/reports/{report_id}/status  {"study_id", "status", "message", ...}
+
+GChat (watch.py): FAILURE at once, robot-down after 30 min silence, daily summary at 21:00.
 
 Run: python main.py   (listens on 127.0.0.1:8003; nginx maps /api/medanta to it)
 """
@@ -26,6 +28,7 @@ from pydantic import BaseModel
 import config
 import db
 import fivec
+import watch
 
 log = logging.getLogger("medanta")
 
@@ -76,6 +79,7 @@ def reports(request: Request, days: int = config.DEFAULT_DAYS, include_done: boo
     """One entry per 5C report (a multi-report order gives several), with everything
     the robot needs to find the eHIS row: Patient ID, study description, scan time."""
     ip = _auth(request, authorization)
+    watch.seen()                               # the robot is alive (it asks every cycle)
     days = max(1, min(int(days), config.MAX_DAYS))
     done = {} if include_done else db.statuses()
     out, errors = [], 0
@@ -122,6 +126,7 @@ def report_pdf(report_id: int, study_id: int, request: Request,
                authorization: str = Header(default="")):
     """The report PDF - only if the study is Medanta's and the report belongs to it."""
     ip = _auth(request, authorization)
+    watch.seen()
     s = db.medanta_study(study_id)
     if not s:
         log.warning("pdf %s/%s refused for %s: not a completed Medanta study", study_id, report_id, ip)
@@ -144,27 +149,38 @@ class StatusIn(BaseModel):
     message: str = ""
     order_id: str = ""
     patient_id: str = ""
+    patient_name: str = ""
+    report_name: str = ""
 
 
 @router.post("/reports/{report_id}/status")
 def report_status(report_id: int, body: StatusIn, request: Request,
                   authorization: str = Header(default="")):
     ip = _auth(request, authorization)
+    watch.seen()                               # each result is a sign of life too (long backlog cycles)
     status = body.status.strip().upper()
     if status not in ("SUCCESS", "FAILURE", "SKIPPED"):
         raise HTTPException(status_code=422, detail="status must be SUCCESS, FAILURE or SKIPPED")
     if not db.medanta_study(body.study_id):
         raise HTTPException(status_code=404, detail="Not found")
     db.set_status(report_id, body.study_id, body.order_id, status, body.message, ip)
+    db.add_event(report_id, body.order_id, body.patient_id, body.patient_name, body.report_name,
+                 status, body.message)
     log.info("status report=%s study=%s %s %s", report_id, body.study_id, status, body.message[:200])
-    if status != "SUCCESS":
-        fivec.gchat(f"Medanta Patna paste {status}: order {body.order_id or '?'} "
-                    f"patient {body.patient_id or '?'} report {report_id} - {body.message[:300]}")
+    if status == "FAILURE":                   # SKIPPED (no pending row) only goes into the daily summary
+        fivec.gchat(f"\u274c Medanta Patna paste FAILED: patient {body.patient_id or '?'} "
+                    f"{body.patient_name} - {body.report_name or 'report ' + str(report_id)} "
+                    f"(order {body.order_id or '?'})\n{body.message[:400]}")
     return {"ok": True}
 
 
 app = FastAPI(title="Medanta report API", docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(router)
+
+
+@app.on_event("startup")
+def _start_watch():
+    watch.start()
 
 
 if __name__ == "__main__":
